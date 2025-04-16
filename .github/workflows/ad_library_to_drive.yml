@@ -1,0 +1,35 @@
+name: 広告ライブラリを取得しGoogle Driveへ保存
+
+on:
+  schedule:
+    # 毎日08:00（JST）→ UTC換算で23:00
+    - cron: '0 23 * * *'
+    # 毎日23:50（JST）→ UTC換算で14:50
+    - cron: '50 14 * * *'
+  workflow_dispatch:
+
+jobs:
+  crawl-and-upload:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Pythonセットアップ
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: ライブラリインストール
+        run: |
+          pip install beautifulsoup4 google-api-python-client google-auth google-auth-httplib2 google-auth-oauthlib requests
+
+      - name: Google認証情報デコード
+        run: echo "$GDRIVE_CREDENTIALS_JSON" | base64 --decode > credentials.json
+        env:
+          GDRIVE_CREDENTIALS_JSON: ${{ secrets.GDRIVE_CREDENTIALS_JSON }}
+
+      - name: 広告ライブラリのクロールとDriveアップロード
+        run: python ad_library_crawler.py
+        env:
+          AD_INSIGHT_FOLDER_ID: ${{ secrets.AD_INSIGHT_FOLDER_ID }}
